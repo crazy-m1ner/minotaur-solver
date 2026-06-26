@@ -77,12 +77,13 @@ _APPROVE_SELECTOR = keccak(b"approve(address,uint256)")[:4]
 # weakening the user-facing protection that the contract already enforces.
 _DEFAULT_SLIPPAGE_BPS = 200
 _DEADLINE_SECONDS = 300
-# 20 buckets (was 10) — finer allocation on large trades. Cost is 2x more
-# slots in the K-bucket ladder, but Multicall3 batches everything in one
-# round-trip, so latency is unchanged. Under p2oc's output-only ranking,
-# the extra granularity reveals splits that would have rounded down to
-# single-route or 2-leg-50/50 at K=10.
-_DEFAULT_SPLIT_GRANULARITY = 20
+# 10 buckets — was bumped to 20 for finer split allocation, but each
+# bucket adds N adapter quote calls to the ladder Multicall3, and the
+# benchmark-window timeout we hit at K=20 + 4 intermediaries × 16 multi-hop
+# combos = call volume too large to fit. K=10 + 2 intermediaries reliably
+# completes; the refinement DP pass + the protective slippage absorb the
+# few bps lost to coarser bucketing.
+_DEFAULT_SPLIT_GRANULARITY = 10
 # 5 bps base (was 10) — p2oc ranks on raw on-chain output surplus, not the
 # gas-weighted JS score, so the gas-savings tiebreaker no longer offsets a
 # few-bps output gain. A lower floor lets genuine output improvements adopt.

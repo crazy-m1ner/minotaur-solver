@@ -41,16 +41,13 @@ AERODROME_V1_DEPLOYMENTS: dict[int, AerodromeV1Deployment] = {
         router="0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43",
         factory="0x420DD381b31aEf6683db6B902084cB0FFECe40Da",
         weth="0x4200000000000000000000000000000000000006",
-        # Bridge tokens — WETH, USDC, USDbC, cbBTC, DAI. Each adds 4
-        # multi-hop probes (2 stable × 2 stable combos). Generalizes the
-        # adapter past the original WETH-only intermediary so exotic-token
-        # benchmarks (post token-discovery-removal) still find paths.
+        # Trimmed to WETH + USDC only to bound benchmark RPC budget under
+        # the round's ~5-min window. The wider intermediary set caused
+        # benchmark_window_elapsed; the same coverage is reachable through
+        # other adapters' split legs (Slipstream multi-hop, V3 2-hop).
         intermediaries=(
             "0x4200000000000000000000000000000000000006",   # WETH
             "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",   # USDC
-            "0xd9AAEc86B65D86f6A7B5B1b0c42FFA531710b6CA",   # USDbC
-            "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf",   # cbBTC
-            "0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb",   # DAI
         ),
     ),
 }

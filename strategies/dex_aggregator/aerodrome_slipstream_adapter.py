@@ -60,11 +60,10 @@ _TOKEN0_SELECTOR = keccak(b"token0()")[:4]
 # the team is now testing against, after moving token discovery out of
 # solver code) still find paths through the deepest CL liquidity.
 _SLIPSTREAM_INTERMEDIARIES: dict[int, tuple[str, ...]] = {
+    # Trimmed to WETH + USDC for benchmark-window budget.
     8453: (
         "0x4200000000000000000000000000000000000006",  # WETH
         "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",  # USDC
-        "0xd9AAEc86B65D86f6A7B5B1b0c42FFA531710b6CA",  # USDbC
-        "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf",  # cbBTC
     ),
 }
 

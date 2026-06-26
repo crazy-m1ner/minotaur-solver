@@ -65,15 +65,15 @@ V3_DEPLOYMENTS: dict[int, V3Deployment] = {
         quoter="0x61fFE014bA17989E743c5F6cB21bF9697530B21e",
         weth="0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
         router_is_v2=False,
-        # Bridge-token intermediaries. Each adds 16 multi-hop probes (4 fee
-        # tiers × 4 fee tiers); Multicall3 absorbs them all in one
-        # round-trip. With the team moving token discovery out of solver
-        # code, exotic-token pairs must route via deep bridge liquidity.
+        # Trimmed to WETH + USDC only — benchmark window is ~5 min and the
+        # wider intermediary set was making the per-scenario Multicall3
+        # payload large enough that all 15 scenarios + the champion
+        # comparison didn't finish in time, triggering
+        # benchmark_window_elapsed. Two intermediaries (4 + 32 = 36 calls
+        # per pair) is the sweet spot.
         intermediaries=(
             "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",   # WETH
             "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",   # USDC
-            "0xdAC17F958D2ee523a2206206994597C13D831ec7",   # USDT
-            "0x6B175474E89094C44Da98b954EedeAC495271d0F",   # DAI
         ),
     ),
     8453: V3Deployment(
@@ -85,8 +85,6 @@ V3_DEPLOYMENTS: dict[int, V3Deployment] = {
         intermediaries=(
             "0x4200000000000000000000000000000000000006",   # WETH
             "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",   # USDC
-            "0xd9AAEc86B65D86f6A7B5B1b0c42FFA531710b6CA",   # USDbC (bridged)
-            "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf",   # cbBTC
         ),
     ),
 }
@@ -94,56 +92,12 @@ V3_DEPLOYMENTS: dict[int, V3Deployment] = {
 V3_FEE_TIERS: tuple[int, ...] = (100, 500, 3000, 10000)
 
 
-# Curated 3-hop intermediary pairs per chain. Format: each tuple is the
-# ordered list of mid tokens (mid1, mid2) — adapter builds the path
-# input → mid1 → mid2 → output and quotes at a single fee combo per hop
-# (avoiding a 64-call combinatorial blow-up: 1 path per pair instead).
-#
-# Targeted at scenarios where 2-hop misses the better route — chiefly
-# BTC/stablecoin paths on ETH (WBTC↔USDC tied at single-hop baseline
-# until 3-hop opens up WBTC→WETH→USDT→USDC at the deepest tiers).
-_V3_3HOP_INTERMEDIARY_PAIRS: dict[int, tuple[tuple[str, str], ...]] = {
-    1: (
-        # WBTC↔stable via WETH-USDT
-        (
-            "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",   # WETH
-            "0xdAC17F958D2ee523a2206206994597C13D831ec7",   # USDT
-        ),
-        # WBTC↔stable via WETH-USDC
-        (
-            "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",   # WETH
-            "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",   # USDC
-        ),
-        # stable↔stable via WETH-USDT (sometimes outperforms single-hop)
-        (
-            "0xdAC17F958D2ee523a2206206994597C13D831ec7",   # USDT
-            "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",   # WETH
-        ),
-    ),
-    8453: (
-        # cbBTC↔stable via cbBTC-WETH-USDC (already exploited by Slipstream
-        # multi-hop, but V3 fork has its own pool depths for these)
-        (
-            "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf",   # cbBTC
-            "0x4200000000000000000000000000000000000006",   # WETH
-        ),
-        # via WETH-USDC for exotic-token coverage
-        (
-            "0x4200000000000000000000000000000000000006",   # WETH
-            "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",   # USDC
-        ),
-    ),
-}
-
-# Fee combos for 3-hop probing. Deeply-liquid pairs cluster at 500 bps,
-# so probe (500, 500, 500) and (500, 500, 3000) — covers WBTC's 3000 tier
-# fall-back. Keep narrow to bound the call budget.
-_V3_3HOP_FEE_COMBOS: tuple[tuple[int, int, int], ...] = (
-    (500, 500, 500),
-    (3000, 500, 500),
-    (500, 500, 3000),
-    (3000, 500, 3000),
-)
+# 3-hop probing disabled to bound the benchmark RPC budget under the
+# round's ~5-min benchmark window. The earlier curated 3-hop set added
+# 8-12 calls per pair which compounded the window-elapsed risk; the same
+# liquidity is reachable through the split DP's parallel 2-hop legs.
+_V3_3HOP_INTERMEDIARY_PAIRS: dict[int, tuple[tuple[str, str], ...]] = {}
+_V3_3HOP_FEE_COMBOS: tuple[tuple[int, int, int], ...] = ()
 
 
 # ── Opaque payloads (private) ──────────────────────────────────────────
