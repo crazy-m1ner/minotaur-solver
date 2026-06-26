@@ -270,50 +270,11 @@ class MultiVenueSplitSolver(BaselineSwapSolver):
             supported_intent_types=base.supported_intent_types,
         )
 
-    # ── initialize: pre-warm common pairs at init so the FIRST scenario
-    # in a benchmark doesn't bear the cold-start RPC discovery cost. The
-    # benchmark report from sub_baee52523f68 showed our solver process
-    # was killed (not "reverted", actually killed) on cbBTC↔USDC + cbBTC↔WETH
-    # — the cold pool discovery on those pairs pushed plan generation past
-    # the per-scenario timeout. Pre-warming the common manifest tokens
-    # while initialize() runs in the background shifts that cost off the
-    # critical path.
-    def initialize(self, config: dict[str, Any] | None = None) -> None:
-        super().initialize(config)
-        # Best-effort: pre-warm the adapters for the canonical manifest
-        # tokens on Base. Failures here MUST NOT propagate — initialize is
-        # called once before the benchmark begins and a partial pre-warm
-        # is still better than none.
-        _WARM_PAIRS = (
-            # Base — chain 8453: every direct + multi-hop discovery the
-            # 13 Base scenarios touch.
-            (8453, "0x4200000000000000000000000000000000000006",   # WETH
-                    "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"),  # USDC
-            (8453, "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf",   # cbBTC
-                    "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"),  # USDC
-            (8453, "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf",   # cbBTC
-                    "0x4200000000000000000000000000000000000006"),  # WETH
-            (8453, "0x4200000000000000000000000000000000000006",   # WETH
-                    "0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb"),  # DAI
-            (8453, "0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb",   # DAI
-                    "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"),  # USDC
-        )
-        for chain_id, t_in, t_out in _WARM_PAIRS:
-            try:
-                w3 = self._get_web3(chain_id)
-            except Exception:
-                continue
-            if w3 is None:
-                continue
-            for adapter in self._adapters:
-                try:
-                    if adapter.supports_chain(chain_id):
-                        adapter.warm_up(w3, chain_id, t_in, t_out)
-                except Exception as exc:
-                    logger.debug(
-                        "pre-warm %s on chain %d %s→%s failed: %s",
-                        adapter.name, chain_id, t_in[:8], t_out[:8], exc,
-                    )
+    # initialize() override removed — the pre-warm attempt added more
+    # startup latency than it saved (benchmark_window_elapsed on the next
+    # submission). Curve Base AddressProvider lookup remains disabled
+    # (see curve_adapter._CURVE_RESOLVE_CHAINS); that alone should
+    # eliminate the multi-RPC cold discovery on Base scenarios.
 
     # ── core ───────────────────────────────────────────────────────────
     def generate_plan(
