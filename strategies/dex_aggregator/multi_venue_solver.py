@@ -270,12 +270,6 @@ class MultiVenueSplitSolver(BaselineSwapSolver):
             supported_intent_types=base.supported_intent_types,
         )
 
-    # initialize() override removed — the pre-warm attempt added more
-    # startup latency than it saved (benchmark_window_elapsed on the next
-    # submission). Curve Base AddressProvider lookup remains disabled
-    # (see curve_adapter._CURVE_RESOLVE_CHAINS); that alone should
-    # eliminate the multi-RPC cold discovery on Base scenarios.
-
     # ── core ───────────────────────────────────────────────────────────
     def generate_plan(
         self,

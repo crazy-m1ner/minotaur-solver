@@ -43,14 +43,9 @@ _CURVE_GET_ADDRESS = keccak(b"get_address(uint256)")[:4]
 _CURVE_META_REGISTRY_ID = 7
 
 CURVE_REGISTRY_BY_CHAIN: dict[int, str] = {1: _CURVE_META_REGISTRY}
-# AddressProvider-based MetaRegistry resolution is DISABLED for non-mainnet
-# chains. On Base the Curve coverage on the benchmark scenarios is zero —
-# the manifest pairs route via V3/Slipstream/Aerodrome v1 — but the
-# AddressProvider lookup added a multi-RPC discovery to the cold-start path
-# that pushed cbBTC↔WETH/USDC over the per-scenario generate_plan
-# timeout, killing the solver subprocess. The static seeds on chain 1
-# still apply via CURVE_STATIC_POOLS.
-_CURVE_RESOLVE_CHAINS: tuple[int, ...] = ()
+# Chains where we'll resolve MetaRegistry at warm-up time via AddressProvider.
+# Avoids hardcoding addresses that may shift across Curve redeployments.
+_CURVE_RESOLVE_CHAINS: tuple[int, ...] = (8453,)   # Base
 
 # Pool selectors.
 _CURVE_GET_DY = keccak(b"get_dy(int128,int128,uint256)")[:4]
